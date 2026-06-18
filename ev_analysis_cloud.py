@@ -175,7 +175,7 @@ for dong, info in pop_data.items():
 
 # 상권 데이터를 통한 방문객 추정 
 try:
-    with open('소상공인시장진흥공단_상가(상권)정보_충북_202603.csv', 'r', encoding='utf-8-sig') as f:
+    with open('청주시_상가상권정보_경량화.csv', 'r', encoding='utf-8-sig') as f:
         reader = csv.reader(f)
         header = next(reader)
         for row in reader:
@@ -519,7 +519,7 @@ recommend_layer = folium.FeatureGroup(name='⭐ 최적 입지 제안 (ON/OFF)', 
 # 1. 상권 좌표 로드 (사각지대 추정을 위해 활용)
 commerce_coords = []
 try:
-    with open('소상공인시장진흥공단_상가(상권)정보_충북_202603.csv', 'r', encoding='utf-8-sig') as f:
+    with open('청주시_상가상권정보_경량화.csv', 'r', encoding='utf-8-sig') as f:
         reader = csv.reader(f)
         header = next(reader)
         for row in reader:
@@ -594,7 +594,7 @@ import random
 # 상권 데이터에서 좌표만 추출 (이미 위에서 로드했지만 순수 좌표만 다시 구성)
 commerce_coords_only = []
 try:
-    with open('소상공인시장진흥공단_상가(상권)정보_충북_202603.csv', 'r', encoding='utf-8-sig') as f:
+    with open('청주시_상가상권정보_경량화.csv', 'r', encoding='utf-8-sig') as f:
         reader = csv.reader(f)
         header = next(reader)
         for row in reader:
