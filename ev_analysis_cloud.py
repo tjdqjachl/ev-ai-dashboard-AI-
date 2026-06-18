@@ -610,6 +610,12 @@ except Exception as e:
     pass
 
 if commerce_coords_only:
+    import random
+    # 클라우드 서버 타임아웃(100초) 방지를 위한 데이터 샘플링 (연산량 1/10 감소)
+    if len(commerce_coords_only) > 5000:
+        random.seed(42)
+        commerce_coords_only = random.sample(commerce_coords_only, 5000)
+
     k = min(30, len(commerce_coords_only))
     random.seed(42) # 재현성 유지
     centroids = random.sample(commerce_coords_only, k)
