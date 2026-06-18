@@ -113,7 +113,7 @@ MIN_LNG, MAX_LNG = 127.2, 127.75
 print("\n[1.5] 행정동 지리정보(면적) 계산 중...")
 geojson_url = "https://raw.githubusercontent.com/vuski/admdongkor/master/ver20230701/HangJeongDong_ver20230701.geojson"
 req = urllib.request.Request(geojson_url, headers={'User-Agent': 'Mozilla/5.0'})
-with urllib.request.urlopen(req) as response:
+with urllib.request.urlopen(req, timeout=15) as response:
     geo_data = json.loads(response.read().decode('utf-8'))
 
 def calculate_polygon_area(coords):
