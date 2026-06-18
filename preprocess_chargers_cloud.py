@@ -20,7 +20,7 @@ print("\n[1] 행정동 GeoJSON 다운로드 및 파싱 중...")
 geojson_url = "https://raw.githubusercontent.com/vuski/admdongkor/master/ver20230701/HangJeongDong_ver20230701.geojson"
 req = urllib.request.Request(geojson_url, headers={'User-Agent': 'Mozilla/5.0'})
 try:
-    with urllib.request.urlopen(req, timeout=15) as response:
+    with urllib.request.urlopen(req, timeout=80) as response:
         geo_data = json.loads(response.read().decode('utf-8'))
 except Exception as e:
     print(f"❌ GeoJSON 다운로드 실패: {e}")
@@ -86,7 +86,7 @@ try:
     req = urllib.request.Request(info_url, headers={'User-Agent': 'Mozilla/5.0'})
     for attempt in range(5):
         try:
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, timeout=80) as response:
                 info_data = json.loads(response.read().decode('utf-8'))
                 info_items = info_data.get('items', {}).get('item', [])
                 if info_items:
@@ -108,7 +108,7 @@ try:
     req = urllib.request.Request(status_url, headers={'User-Agent': 'Mozilla/5.0'})
     for attempt in range(5):
         try:
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, timeout=80) as response:
                 st_data = json.loads(response.read().decode('utf-8'))
                 for it in st_data.get('items', {}).get('item', []):
                     # chgerId + statId 가 유니크 키

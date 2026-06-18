@@ -40,28 +40,44 @@ def serve_map():
     except Exception as e:
         return f"Error loading map: {e}", 500
 
+# 백그라운드 작업 상태 저장용
+update_status = {"is_updating": False, "last_error": None}
+
+def run_background_update():
+    global update_status
+    try:
+        subprocess.run(["python", 'preprocess_chargers_cloud.py'], check=True)
+        subprocess.run(["python", 'ev_analysis_cloud.py'], check=True)
+        update_status["last_error"] = None
+    except subprocess.CalledProcessError as e:
+        update_status["last_error"] = f"스크립트 에러: {str(e)}"
+    except Exception as e:
+        update_status["last_error"] = str(e)
+    finally:
+        update_status["is_updating"] = False
+        refresh_lock.release()
+
 @app.route('/api/refresh', methods=['POST'])
 def refresh_data():
-    # Rate Limiting & DoS 방지
+    global update_status
     if not refresh_lock.acquire(blocking=False):
         return jsonify({
             'status': 'error', 
             'message': '현재 다른 사용자의 업데이트가 진행 중입니다. 잠시 후 다시 시도해주세요.'
         }), 429
 
-    try:
-        # 1. API 수집 실행
-        subprocess.run([sys.executable, 'preprocess_chargers_cloud.py'], check=True)
-        # 2. AI 분석 실행
-        subprocess.run([sys.executable, 'ev_analysis_cloud.py'], check=True)
-        
-        return jsonify({'status': 'success'})
-    except subprocess.CalledProcessError as e:
-        return jsonify({'status': 'error', 'message': f'스크립트 실행 오류: {str(e)}'}), 500
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-    finally:
-        refresh_lock.release()
+    update_status["is_updating"] = True
+    update_status["last_error"] = None
+    
+    # 백그라운드 스레드에서 분석 시작 (100초 타임아웃 우회)
+    thread = threading.Thread(target=run_background_update)
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({
+        'status': 'processing',
+        'message': '데이터 수집 및 AI 분석이 클라우드 백그라운드에서 시작되었습니다. (약 1~2분 소요)'
+    })
 
 if __name__ == '__main__':
     # 로컬 테스트 시 실행 (실제 상용 배포시에는 gunicorn 등의 WSGI 서버가 진입점이 됩니다)

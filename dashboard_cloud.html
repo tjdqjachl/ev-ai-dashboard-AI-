@@ -159,16 +159,13 @@
                 const response = await fetch('/api/refresh', { method: 'POST' });
                 const result = await response.json();
                 
-                if (response.ok && result.status === 'success') {
-                    // 지도 강제 리로드 (캐시 무시)
-                    iframe.src = '/map_cloud.html?t=' + new Date().getTime();
-                    iframe.onload = function() {
-                        updateTime();
-                        showToast();
-                        iframe.onload = null;
-                    };
+                if (result.status === 'success') {
+                    alert('데이터 업데이트 및 AI 분석이 성공적으로 완료되었습니다.');
+                    location.reload();
+                } else if (result.status === 'processing') {
+                    alert(result.message + '\n\n작업이 백그라운드에서 진행 중이니 창을 닫아도 됩니다. 나중에 다시 들어와서 확인해보세요!');
                 } else {
-                    alert('데이터 업데이트 중 오류가 발생했습니다.\n' + (result.message || response.statusText));
+                    alert('데이터 업데이트 중 오류가 발생했습니다.\n' + result.message);
                 }
             } catch (error) {
                 alert('서버와 통신할 수 없습니다.');
