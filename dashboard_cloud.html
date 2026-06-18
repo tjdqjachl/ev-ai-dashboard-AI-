@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>한국교통대학교 AI 관제 대시보드</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; background-color: #12121c; color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* 헤더 스타일 */
+        .header { background: #1a1a2e; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; flex-wrap: wrap; gap: 10px; border-bottom: 2px solid #00d2ff; }
+        .header h1 { margin: 0; font-size: 18px; color: #00d2ff; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 800; letter-spacing: 0.5px;}
+        .header h1 span { color: #ffffff; font-weight: bold; font-size: 11px; background: #27ae60; padding: 3px 6px; border-radius: 4px; }
+        .controls { display: flex; align-items: center; gap: 15px; flex-wrap: wrap;}
+        .last-update { font-size: 12px; color: #b2bec3; background: #2d3436; padding: 5px 10px; border-radius: 4px; border: 1px solid #4a4a4a;}
+        
+        .btn-refresh { 
+            background: linear-gradient(135deg, #0984e3 0%, #00cec9 100%); 
+            border: none; padding: 8px 16px; border-radius: 6px; color: white; 
+            font-weight: bold; cursor: pointer; transition: all 0.3s ease; 
+            display: flex; align-items: center; gap: 6px; font-size: 13px; 
+            box-shadow: 0 4px 12px rgba(0, 206, 201, 0.3);
+        }
+        .btn-refresh:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 206, 201, 0.5); }
+        .btn-refresh:disabled { background: #636e72; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.8;}
+        
+        @media (max-width: 700px) {
+            .header { padding: 10px; flex-direction: column; align-items: flex-start; }
+            .header h1 { font-size: 15px; }
+            .controls { width: 100%; justify-content: space-between; gap: 8px; margin-top: 5px;}
+            .last-update { font-size: 10px; padding: 4px 6px; }
+            .btn-refresh { padding: 6px 10px; font-size: 11px; }
+            .footer { font-size: 9px !important; flex-direction: column; text-align: center; }
+        }
+        
+        .map-container { flex: 1; position: relative; width: 100%; background: #ffffff; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        /* 푸터 (출처 명시) */
+        .footer {
+            background: #000000; color: #636e72; font-size: 11px; padding: 6px 20px; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
+        }
+        .footer a { color: #00cec9; text-decoration: none; margin: 0 3px; }
+        .footer a:hover { text-decoration: underline; }
+        
+        /* 로딩 오버레이 */
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 28, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 20; backdrop-filter: blur(8px); }
+        .overlay.active { display: flex; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(0, 206, 201, 0.1); border-top-color: #00cec9; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 18px; font-weight: bold; color: #00cec9; margin-bottom: 10px;}
+        .loading-subtext { font-size: 13px; color: #b2bec3; text-align: center; line-height: 1.5;}
+        
+        /* 법적 고지 팝업 (Modal) */
+        .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #2d3436; border: 1px solid #636e72; border-radius: 10px; width: 90%; max-width: 500px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); position: relative; }
+        .modal-title { font-size: 20px; font-weight: bold; color: #e74c3c; margin-bottom: 15px; border-bottom: 1px solid #4a4a4a; padding-bottom: 10px; display: flex; align-items: center; gap: 8px;}
+        .modal-body { font-size: 13px; color: #dfe6e9; line-height: 1.6; margin-bottom: 25px; }
+        .modal-body ul { margin-top: 10px; padding-left: 20px; }
+        .modal-body li { margin-bottom: 8px; color: #fdcb6e; }
+        .modal-btn { background: #0984e3; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .modal-btn:hover { background: #74b9ff; }
+        
+        #toast { visibility: hidden; background-color: #00b894; color: #fff; text-align: center; border-radius: 6px; padding: 12px 20px; position: fixed; z-index: 30; left: 50%; bottom: 40px; font-size: 14px; transform: translateX(-50%); opacity: 0; transition: opacity 0.5s, bottom 0.5s; font-weight: bold; box-shadow: 0 4px 10px rgba(0, 184, 148, 0.4);}
+        #toast.show { visibility: visible; opacity: 1; bottom: 60px; }
+    </style>
+</head>
+<body>
+    <!-- 법적 고지 면책 동의 팝업 -->
+    <div class="modal-bg" id="disclaimer-modal">
+        <div class="modal-content">
+            <div class="modal-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                법적 고지 및 이용 안내 (Disclaimer)
+            </div>
+            <div class="modal-body">
+                본 웹사이트는 <strong>한국교통대학교 [AI 기초와 응용]</strong> 과목의 과제 일환으로 제작된 <b>비상업적 학술 목적의 프로젝트</b>입니다.<br><br>
+                <ul>
+                    <li>본 사이트의 AI 기반 입지 추천 및 분석 결과는 알고리즘에 의한 단순 추정치입니다.</li>
+                    <li>따라서 실제 투자, 인프라 구축, 행정 정책 등 <b>어떠한 공식적/상업적 의사결정의 근거로도 사용할 수 없습니다.</b></li>
+                    <li>제작자 및 한국교통대학교는 본 사이트의 정보를 활용하여 발생한 결과에 대해 <b>어떠한 법적 책임도 지지 않습니다.</b></li>
+                    <li>본 사이트는 접속자의 어떠한 개인정보나 위치정보도 수집, 가공, 저장하지 않습니다.</li>
+                </ul>
+            </div>
+            <button class="modal-btn" onclick="acceptDisclaimer()">안내사항을 모두 확인하였으며, 이에 동의합니다.</button>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 UI -->
+    <div class="header">
+        <h1>⚡ 청주시 전기차 충전망 AI 분석 시스템 <span>한국교통대학교 AI 기초와 응용</span></h1>
+        <div class="controls">
+            <span class="last-update" id="last-update-time">마지막 갱신: 로딩 중...</span>
+            <button class="btn-refresh" id="refresh-btn" onclick="refreshData()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 2.13-5.88L2 9"></path></svg>
+                데이터 실시간 갱신
+            </button>
+        </div>
+    </div>
+    
+    <div class="map-container">
+        <div class="overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <div class="loading-text">공공 API 통신 및 AI 분석 중...</div>
+            <div class="loading-subtext">서버에서 최신 데이터를 수집하여 K-Means 사각지대를 다시 도출합니다.<br>이 작업은 최대 20초 정도 소요될 수 있습니다.</div>
+        </div>
+        <iframe id="map-frame" src="/map_cloud.html"></iframe>
+    </div>
+
+    <!-- 데이터 출처 명시 (Footer) -->
+    <div class="footer">
+        <div>
+            <b>[데이터 출처] 공공데이터포털 활용:</b> 
+            <a href="https://www.data.go.kr/data/15076352/openapi.do#tab_layer_detail_function" target="_blank">[충전소 OpenAPI]</a> |
+            <a href="https://www.data.go.kr/data/3034560/fileData.do#" target="_blank">[운영현황]</a> |
+            <a href="https://www.data.go.kr/data/15083033/fileData.do" target="_blank">[상권정보]</a> |
+            <a href="https://www.data.go.kr/data/3075677/fileData.do" target="_blank">[완속충전기]</a> |
+            <a href="https://www.cheongju.go.kr/stat/selectBbsNttList.do?bbsNo=535&key=1709" target="_blank">[인구통계]</a> |
+            <a href="https://www.data.go.kr/data/15142951/fileData.do" target="_blank">[차량등록]</a>
+        </div>
+        <div>
+            &copy; 2026 한국교통대학교 AI 기초와 응용 과제
+        </div>
+    </div>
+
+    <div id="toast">✅ 데이터 연동 완료! 지도가 최신화되었습니다.</div>
+
+    <script>
+        function acceptDisclaimer() {
+            document.getElementById('disclaimer-modal').style.display = 'none';
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('last-update-time').innerText = `마지막 갱신: ${now.toLocaleTimeString()}`;
+        }
+        
+        window.onload = function() {
+            updateTime();
+        };
+
+        function showToast() {
+            var toast = document.getElementById("toast");
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 4000);
+        }
+
+        async function refreshData() {
+            const btn = document.getElementById('refresh-btn');
+            const overlay = document.getElementById('loading-overlay');
+            const iframe = document.getElementById('map-frame');
+            
+            btn.disabled = true;
+            btn.innerHTML = '업데이트 진행 중...';
+            overlay.classList.add('active');
+            
+            try {
+                const response = await fetch('/api/refresh', { method: 'POST' });
+                const result = await response.json();
+                
+                if (response.ok && result.status === 'success') {
+                    // 지도 강제 리로드 (캐시 무시)
+                    iframe.src = '/map_cloud.html?t=' + new Date().getTime();
+                    iframe.onload = function() {
+                        updateTime();
+                        showToast();
+                        iframe.onload = null;
+                    };
+                } else {
+                    alert('데이터 업데이트 중 오류가 발생했습니다.\n' + (result.message || response.statusText));
+                }
+            } catch (error) {
+                alert('서버와 통신할 수 없습니다.');
+                console.error(error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 2.13-5.88L2 9"></path></svg> 데이터 실시간 갱신`;
+                overlay.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
