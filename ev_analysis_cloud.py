@@ -88,11 +88,12 @@ manual_overrides = {
     '성화개신죽림동': {'gu': '서원구', 'households': 22287, 'population': 47574},
     '봉명2송정동': {'gu': '흥덕구', 'households': 12864, 'population': 23981},
     '운천신봉동': {'gu': '흥덕구', 'households': 7311, 'population': 15610},
-    '율량사천동': {'gu': '청원구', 'households': 20000, 'population': 40000}
+    '율량사천동': {'gu': '청원구', 'households': 20000, 'population': 40000},
+    '용담명암산성동': {'gu': '상당구', 'households': 4775, 'population': 12395}
 }
 
 # CSV 원본 데이터의 오타(축림, 동 누락 등) 삭제
-bad_keys = ['성화개신축림', '봉명2송정', '운천신봉', '율량사천', '봉명2동']
+bad_keys = ['성화개신축림', '봉명2송정', '운천신봉', '율량사천', '봉명2동', '용담명암']
 for bk in bad_keys:
     if bk in pop_data:
         del pop_data[bk]
